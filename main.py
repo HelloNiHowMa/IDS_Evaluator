@@ -70,7 +70,8 @@ def main():
         print("[-] 找不到 config.ini 檔案！")
         sys.exit(1)
 
-    config.read('config.ini')
+    # 加上 utf-8 編碼處理，避免中文與 Emoji 造成讀取報錯
+    config.read('config.ini', encoding='utf-8')
 
     url_linux = config['DVWA']['base_url_linux']
     url_alone_win = config['DVWA']['base_url_alone_win']
@@ -78,6 +79,13 @@ def main():
     username = config['DVWA']['username']
     password = config['DVWA']['password']
     security_level = config['DVWA']['default_security_level']
+
+    # 防錯機制：嘗試讀取 User-Agent，若未設定則保留為空
+    try:
+        user_agent = config['Browser user-agent']['user_agent']
+    except KeyError:
+        user_agent = None
+        print("[!] 警告: config.ini 缺少 user_agent 設定，將使用 requests 預設值。")
 
     # --- 第一層選單：選擇靶機 ---
     print("="*40)
@@ -120,7 +128,12 @@ def main():
         print("[-] 輸入錯誤，請輸入 1, 2 或 3。")
         sys.exit(1)
 
+    # 初始化 Session 並套用全域 User-Agent
     session = requests.Session()
+    if user_agent:
+        session.headers.update({'User-Agent': user_agent})
+        print(f"\n[*] 已載入自訂 User-Agent: {user_agent}")
+
     login_dvwa(session, base_url, username, password)
     set_security_level(session, base_url, security_level)
 
