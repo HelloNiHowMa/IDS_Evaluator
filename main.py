@@ -69,7 +69,6 @@ def main():
     if not os.path.exists('config.ini'):
         print("[-] 找不到 config.ini 檔案！")
         sys.exit(1)
-
     # 加上 utf-8 編碼處理，避免中文與 Emoji 造成讀取報錯
     config.read('config.ini', encoding='utf-8')
 
@@ -79,13 +78,23 @@ def main():
     username = config['DVWA']['username']
     password = config['DVWA']['password']
     security_level = config['DVWA']['default_security_level']
-
     # 防錯機制：嘗試讀取 User-Agent，若未設定則保留為空
     try:
         user_agent = config['Browser user-agent']['user_agent']
     except KeyError:
         user_agent = None
         print("[!] 警告: config.ini 缺少 user_agent 設定，將使用 requests 預設值。")
+
+    # --- 讀取 OOB Listener 設定 ---
+    try:
+        attacker_ip = config['OOB_Listener']['attacker_ip']
+        attacker_port = int(config['OOB_Listener']['attacker_port'])
+        listen_timeout = int(config['OOB_Listener']['listen_timeout'])
+    except KeyError:
+        print("[!] 警告: config.ini 缺少 OOB_Listener 設定，將使用預設值。")
+        attacker_ip = "127.0.0.1"
+        attacker_port = 8080
+        listen_timeout = 10
 
     # --- 第一層選單：選擇靶機 ---
     print("="*40)
@@ -129,6 +138,7 @@ def main():
         sys.exit(1)
 
     # 初始化 Session 並套用全域 User-Agent
+
     session = requests.Session()
     if user_agent:
         session.headers.update({'User-Agent': user_agent})
@@ -142,18 +152,19 @@ def main():
     
     if attack_choice == 1:
         print("[*] 啟動 Command Injection 模組...")
-        tester = CommandInjectionTester(session, base_url, os_choice, security_level)
+        # 將 OOB 所需參數一併傳入
+        tester = CommandInjectionTester(session, base_url, os_choice, security_level, attacker_ip, attacker_port, listen_timeout)
         tester.run()
     elif attack_choice == 2:
         print("[*] 啟動 SQL Injection 模組...")
         # tester = SQLInjectionTester(session, base_url, security_level)
         # tester.run()
-        print("[-] SQL Injection 模組尚未實作，請由架構師補齊。")
+        print("[-] SQL Injection 模組尚未實作。")
     elif attack_choice == 3:
         print("[*] 啟動 SQL Injection Blind 模組...")
         # tester = SQLiBlindTester(session, base_url, security_level)
         # tester.run()
-        print("[-] SQL Injection Blind 模組尚未實作，請由架構師補齊。")
+        print("[-] SQL Injection Blind 模組尚未實作。")
 
 if __name__ == "__main__":
     main()
