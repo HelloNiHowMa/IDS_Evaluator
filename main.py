@@ -7,7 +7,7 @@ import os
 # 載入漏洞測試模組
 from exploits.command_injection import CommandInjectionTester
 # 預留未來要載入的模組
-# from exploits.sql_injection import SQLInjectionTester
+from exploits.sql_injection import SQLInjectionTester
 # from exploits.sqli_blind import SQLiBlindTester
 
 def get_csrf_token(session, url):
@@ -157,9 +157,9 @@ def main():
         tester.run()
     elif attack_choice == 2:
         print("[*] 啟動 SQL Injection 模組...")
-        # tester = SQLInjectionTester(session, base_url, security_level)
-        # tester.run()
-        print("[-] SQL Injection 模組尚未實作。")
+        tester = SQLInjectionTester(session, base_url, security_level)
+        tester.run()
+        #print("[-] SQL Injection 模組尚未實作。")
     elif attack_choice == 3:
         print("[*] 啟動 SQL Injection Blind 模組...")
         # tester = SQLiBlindTester(session, base_url, security_level)
