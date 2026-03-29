@@ -10,6 +10,7 @@ from exploits.command_injection import CommandInjectionTester
 from exploits.sql_injection import SQLInjectionTester
 # from exploits.sqli_blind import SQLiBlindTester
 from exploits.file_upload import FileUploadTester
+from exploits.lfi import LFITester
 
 def show_disclaimer_and_agree():
     """讀取免責聲明並要求使用者同意"""
@@ -129,14 +130,25 @@ def main():
         attacker_port = 8080
         listen_timeout = 10
 
+
+    # --- 讀取自訂字典檔設定 ---
+    try:
+        # 變數與 Key 都統一使用乾淨的全小寫
+        lfi_linux_list = config['Custom_Wordlists']['lfi_linux']
+        lfi_windows_list = config['Custom_Wordlists']['lfi_windows']
+    except KeyError:
+        print("[!] 警告: config.ini 缺少 Custom_Wordlists 設定，將使用預設檔名。")
+        lfi_linux_list = "custom_lfi_linux.txt"
+        lfi_windows_list = "custom_lfi_windows.txt"
+
     # --- 第一層選單：選擇靶機 ---
     print("="*40)
     print("   DVWA 自動化滲透與 IDS 規則驗證工具")
     print("="*40)
     print("請選擇要測試的目標靶機:")
-    print(f"1. Ubuntu 20.04 (Linux)   [{url_linux}]")
-    print(f"2. Standalone Windows     [{url_alone_win}]")
-    print(f"3. Windows in AD          [{url_ad_win}]")
+    print(f" [1] Ubuntu 20.04 (Linux)   [{url_linux}]")
+    print(f" [2] Standalone Windows     [{url_alone_win}]")
+    print(f" [3] Windows in AD          [{url_ad_win}]")
     print("="*40)
 
     try:
@@ -157,18 +169,19 @@ def main():
     # --- 第二層選單：選擇攻擊類型 ---
     print("\n" + "="*40)
     print("請選擇要執行的漏洞測試模組:")
-    print("1. Command Injection")
-    print("2. SQL Injection")
-    print("3. SQL Injection Blind")
-    print("4. File Upload")
+    print(" [1] Command Injection")
+    print(" [2] SQL Injection")
+    print(" [3] SQL Injection Blind")
+    print(" [4] File Upload")
+    print(" [5] Local File Inclusion")
     print("="*40)
 
     try:
-        attack_choice = int(input("請輸入選項 (1-3): "))
-        if attack_choice not in [1, 2, 3, 4]:
+        attack_choice = int(input("請輸入選項 (1-5): "))
+        if attack_choice not in [1, 2, 3, 4, 5]:
             raise ValueError
     except ValueError:
-        print("[-] 輸入錯誤，請輸入 1, 2, 3 或 4。")
+        print("[-] 輸入錯誤，請輸入 1 到 5 之間的數字。")
         sys.exit(1)
 
     # 初始化 Session 並套用全域 User-Agent
@@ -202,6 +215,10 @@ def main():
     elif attack_choice == 4:
         print("[*] 啟動 File Upload 模組...")
         tester = FileUploadTester(session, base_url, security_level)
+        tester.run()
+    elif attack_choice == 5:
+        print("[*] 啟動 Local File Inclusion 模組...")
+        tester = LFITester(session, base_url, os_choice, security_level, lfi_linux_list, lfi_windows_list)
         tester.run()
 
 
