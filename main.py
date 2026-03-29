@@ -9,6 +9,35 @@ from exploits.command_injection import CommandInjectionTester
 # 預留未來要載入的模組
 from exploits.sql_injection import SQLInjectionTester
 # from exploits.sqli_blind import SQLiBlindTester
+from exploits.file_upload import FileUploadTester
+
+def show_disclaimer_and_agree():
+    """讀取免責聲明並要求使用者同意"""
+    disclaimer_file = 'disclaimer.txt'
+    
+    # 防錯機制：檢查聲明檔是否存在
+    if not os.path.exists(disclaimer_file):
+        print(f"[-] 找不到免責聲明檔案 ({disclaimer_file})！")
+        print("[-] 為確保安全與合規，程式終止。請確保 disclaimer.txt 存在於同一目錄下。")
+        sys.exit(1)
+        
+    # 讀取並印出免責聲明
+    with open(disclaimer_file, 'r', encoding='utf-8') as f:
+        content = f.read()
+        
+    print("="*60)
+    print(content)
+    print("="*60)
+    
+    # 強制要求同意
+    choice = input("\n[?] 您是否已詳細閱讀並同意上述免責聲明與使用條款？(輸入 Y 同意，其他按鍵退出): ").strip().upper()
+    if choice != 'Y':
+        print("[-] 您未同意免責聲明，程式已安全終止。")
+        sys.exit(0)
+        
+    print("[+] 感謝您的配合，程式即將啟動...\n")
+
+
 
 def get_csrf_token(session, url):
     """通用的防錯機制：從指定 URL 取得 anti-CSRF token"""
@@ -65,6 +94,10 @@ def set_security_level(session, base_url, level):
     print(f"[+] 安全等級已設為 {level}。")
 
 def main():
+    # 1. 最優先執行：檢查並要求同意免責聲明
+    show_disclaimer_and_agree()
+
+    # 2. 讀取設定檔
     config = configparser.ConfigParser()
     if not os.path.exists('config.ini'):
         print("[-] 找不到 config.ini 檔案！")
@@ -127,14 +160,15 @@ def main():
     print("1. Command Injection")
     print("2. SQL Injection")
     print("3. SQL Injection Blind")
+    print("4. File Upload")
     print("="*40)
 
     try:
         attack_choice = int(input("請輸入選項 (1-3): "))
-        if attack_choice not in [1, 2, 3]:
+        if attack_choice not in [1, 2, 3, 4]:
             raise ValueError
     except ValueError:
-        print("[-] 輸入錯誤，請輸入 1, 2 或 3。")
+        print("[-] 輸入錯誤，請輸入 1, 2, 3 或 4。")
         sys.exit(1)
 
     # 初始化 Session 並套用全域 User-Agent
@@ -165,6 +199,11 @@ def main():
         # tester = SQLiBlindTester(session, base_url, security_level)
         # tester.run()
         print("[-] SQL Injection Blind 模組尚未實作。")
+    elif attack_choice == 4:
+        print("[*] 啟動 File Upload 模組...")
+        tester = FileUploadTester(session, base_url, security_level)
+        tester.run()
+
 
 if __name__ == "__main__":
     main()
