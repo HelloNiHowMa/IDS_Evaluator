@@ -96,7 +96,7 @@ def set_security_level(session, base_url, level):
 
 def main():
     # 1. 最優先執行：檢查並要求同意免責聲明
-    show_disclaimer_and_agree()
+    #show_disclaimer_and_agree()
 
     # 2. 讀取設定檔
     config = configparser.ConfigParser()
@@ -136,11 +136,12 @@ def main():
         # 變數與 Key 都統一使用乾淨的全小寫
         lfi_linux_list = config['Custom_Wordlists']['lfi_linux']
         lfi_windows_list = config['Custom_Wordlists']['lfi_windows']
+        cmd_injection_list = config['Custom_Wordlists']['cmd_injection']
     except KeyError:
         print("[!] 警告: config.ini 缺少 Custom_Wordlists 設定，將使用預設檔名。")
         lfi_linux_list = "custom_lfi_linux.txt"
         lfi_windows_list = "custom_lfi_windows.txt"
-
+        cmd_injection_list = "./exploits/custom_cmd_injection.txt"
     # --- 第一層選單：選擇靶機 ---
     print("="*40)
     print("   DVWA 自動化滲透與 IDS 規則驗證工具")
@@ -200,7 +201,7 @@ def main():
     if attack_choice == 1:
         print("[*] 啟動 Command Injection 模組...")
         # 將 OOB 所需參數一併傳入
-        tester = CommandInjectionTester(session, base_url, os_choice, security_level, attacker_ip, attacker_port, listen_timeout)
+        tester = CommandInjectionTester(session, base_url, os_choice, security_level, attacker_ip, attacker_port, listen_timeout, custom_payload_file=cmd_injection_list)
         tester.run()
     elif attack_choice == 2:
         print("[*] 啟動 SQL Injection 模組...")
