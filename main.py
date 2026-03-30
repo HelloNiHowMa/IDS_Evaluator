@@ -11,6 +11,7 @@ from exploits.sql_injection import SQLInjectionTester
 # from exploits.sqli_blind import SQLiBlindTester
 from exploits.file_upload import FileUploadTester
 from exploits.lfi import LFITester
+from exploits.brute_force import BruteForceTester
 
 def show_disclaimer_and_agree():
     """讀取免責聲明並要求使用者同意"""
@@ -96,7 +97,7 @@ def set_security_level(session, base_url, level):
 
 def main():
     # 1. 最優先執行：檢查並要求同意免責聲明
-    #show_disclaimer_and_agree()
+    show_disclaimer_and_agree()
 
     # 2. 讀取設定檔
     config = configparser.ConfigParser()
@@ -132,16 +133,33 @@ def main():
 
 
     # --- 讀取自訂字典檔設定 ---
+    """
     try:
         # 變數與 Key 都統一使用乾淨的全小寫
         lfi_linux_list = config['Custom_Wordlists']['lfi_linux']
         lfi_windows_list = config['Custom_Wordlists']['lfi_windows']
         cmd_injection_list = config['Custom_Wordlists']['cmd_injection']
+
     except KeyError:
         print("[!] 警告: config.ini 缺少 Custom_Wordlists 設定，將使用預設檔名。")
         lfi_linux_list = "custom_lfi_linux.txt"
         lfi_windows_list = "custom_lfi_windows.txt"
         cmd_injection_list = "./exploits/custom_cmd_injection.txt"
+    """
+    # --- 讀取自訂字典檔設定 (使用 fallback 確保高容錯) ---
+    lfi_linux_list = config.get('Custom_Wordlists', 'lfi_linux', fallback='custom_lfi_linux.txt')
+    lfi_windows_list = config.get('Custom_Wordlists', 'lfi_windows', fallback='custom_lfi_windows.txt')
+    cmd_injection_list = config.get('Custom_Wordlists', 'cmd_injection', fallback='./exploits/custom_cmd_injection.txt')
+    brute_users_list = config.get('Custom_Wordlists', 'brute_users', fallback='./exploits/users.txt')
+    brute_passwords_list = config.get('Custom_Wordlists', 'brute_passwords', fallback='./exploits/passwords.txt')
+
+    try:
+        brute_delay = float(config.get('Custom_Wordlists', 'brute_force_delay', fallback='0.2'))
+    except ValueError:
+        print("[!] 警告: brute_force_delay 格式錯誤，將使用預設值 0.2")
+        brute_delay = 0.2
+
+
     # --- 第一層選單：選擇靶機 ---
     print("="*40)
     print("   DVWA 自動化滲透與 IDS 規則驗證工具")
@@ -175,14 +193,15 @@ def main():
     print(" [3] SQL Injection Blind")
     print(" [4] File Upload")
     print(" [5] Local File Inclusion")
+    print(" [6] Brute Force") 
     print("="*40)
 
     try:
-        attack_choice = int(input("請輸入選項 (1-5): "))
-        if attack_choice not in [1, 2, 3, 4, 5]:
+        attack_choice = int(input("請輸入選項 (1-6): "))
+        if attack_choice not in [1, 2, 3, 4, 5, 6]:
             raise ValueError
     except ValueError:
-        print("[-] 輸入錯誤，請輸入 1 到 5 之間的數字。")
+        print("[-] 輸入錯誤，請輸入 1 到 6 之間的數字。")
         sys.exit(1)
 
     # 初始化 Session 並套用全域 User-Agent
@@ -221,7 +240,10 @@ def main():
         print("[*] 啟動 Local File Inclusion 模組...")
         tester = LFITester(session, base_url, os_choice, security_level, lfi_linux_list, lfi_windows_list)
         tester.run()
-
+    elif attack_choice == 6:
+        print(f"[*] 啟動 Brute Force 模組(設定延遲: {brute_delay}s)...")
+        tester = BruteForceTester(session, base_url, security_level, brute_users_list, brute_passwords_list, brute_delay)
+        tester.run()
 
 if __name__ == "__main__":
     main()
