@@ -8,7 +8,7 @@ import os
 from exploits.command_injection import CommandInjectionTester
 # 預留未來要載入的模組
 from exploits.sql_injection import SQLInjectionTester
-# from exploits.sqli_blind import SQLiBlindTester
+from exploits.sqli_blind import SQLiBlindTester
 from exploits.file_upload import FileUploadTester
 from exploits.lfi import LFITester
 from exploits.brute_force import BruteForceTester
@@ -97,7 +97,7 @@ def set_security_level(session, base_url, level):
 
 def main():
     # 1. 最優先執行：檢查並要求同意免責聲明
-    show_disclaimer_and_agree()
+    #show_disclaimer_and_agree()
 
     # 2. 讀取設定檔
     config = configparser.ConfigParser()
@@ -132,20 +132,6 @@ def main():
         listen_timeout = 10
 
 
-    # --- 讀取自訂字典檔設定 ---
-    """
-    try:
-        # 變數與 Key 都統一使用乾淨的全小寫
-        lfi_linux_list = config['Custom_Wordlists']['lfi_linux']
-        lfi_windows_list = config['Custom_Wordlists']['lfi_windows']
-        cmd_injection_list = config['Custom_Wordlists']['cmd_injection']
-
-    except KeyError:
-        print("[!] 警告: config.ini 缺少 Custom_Wordlists 設定，將使用預設檔名。")
-        lfi_linux_list = "custom_lfi_linux.txt"
-        lfi_windows_list = "custom_lfi_windows.txt"
-        cmd_injection_list = "./exploits/custom_cmd_injection.txt"
-    """
     # --- 讀取自訂字典檔設定 (使用 fallback 確保高容錯) ---
     lfi_linux_list = config.get('Custom_Wordlists', 'lfi_linux', fallback='custom_lfi_linux.txt')
     lfi_windows_list = config.get('Custom_Wordlists', 'lfi_windows', fallback='custom_lfi_windows.txt')
@@ -158,6 +144,13 @@ def main():
     except ValueError:
         print("[!] 警告: brute_force_delay 格式錯誤，將使用預設值 0.2")
         brute_delay = 0.2
+
+    # --- 讀取 Blind SQLi 延遲設定 (使用 fallback 確保高容錯) ---
+    try:
+        blind_timeout = float(config.get('DVWA', 'blind_sqli_timeout', fallback='5.0'))
+    except ValueError:
+        print("[!] 警告: blind_sqli_timeout 格式錯誤，將使用預設值 5.0")
+        blind_timeout = 5.0
 
 
     # --- 第一層選單：選擇靶機 ---
@@ -228,10 +221,10 @@ def main():
         tester.run()
         #print("[-] SQL Injection 模組尚未實作。")
     elif attack_choice == 3:
-        print("[*] 啟動 SQL Injection Blind 模組...")
-        # tester = SQLiBlindTester(session, base_url, security_level)
-        # tester.run()
-        print("[-] SQL Injection Blind 模組尚未實作。")
+        print(f"[*] 啟動 SQL Injection Blind 模組 (設定延遲: {blind_timeout}s)...")
+        # 將 blind_timeout 傳入
+        tester = SQLiBlindTester(session, base_url, security_level, blind_timeout)
+        tester.run()
     elif attack_choice == 4:
         print("[*] 啟動 File Upload 模組...")
         tester = FileUploadTester(session, base_url, security_level)

